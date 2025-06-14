@@ -1,11 +1,16 @@
 import streamlit as st
 import google.generativeai as genai
 
-# Configure Gemini API key directly (ONLY do this in private or secure apps!)
-genai.configure(api_key="YOUR_API_KEY")
+# ✅ HARDCODE API KEY (Replace with yours)
+GOOGLE_API_KEY = "PASTE-YOUR-API-KEY-HERE"
 
-# 🌍 Define system prompt with allowed/blocked topics
-system_instruction = """
+# ✅ Configure Gemini
+genai.configure(api_key=GOOGLE_API_KEY)
+
+# ✅ Use Gemini 1.5 Flash
+model = genai.GenerativeModel(
+    model_name="models/gemini-1.5-flash",
+    system_instruction="""
 You are Travelio, an AI travel assistant. Your ONLY task is to help users with travel and tourism-related information.
 
 ✅ Allowed topics include:
@@ -22,16 +27,42 @@ If the user asks something unrelated to travel, ALWAYS reply:
 
 Be polite, professional, helpful, and concise.
 """
-
-# 🧠 Load Gemini 1.5 Flash model with system rules
-model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
-    system_instruction=system_instruction
 )
 
-# 💬 Track chat history in session state
-if "chat" not in st.session_state:
-    st.session_state.chat = model.start_chat()
+# ✅ Page layout
+st.set_page_config(page_title="🌍 Travelio - AI Travel Assistant", layout="centered")
+st.title("🌍 Travelio - Your AI Travel Assistant")
+st.caption("Ask about destinations, visas, attractions, tips & more!")
 
-# 🧠 Page layout
-st.set_page_config(page_title="🌍 Travelio - AI Travel Assistant_
+# ✅ History (for multi-turn context)
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+# ✅ Display previous messages
+for message in st.session_state.history:
+    with st.chat_message(message["role"]):
+        st.markdown(message["text"])
+
+# ✅ User input
+user_input = st.chat_input("Where do you want to go?")
+
+if user_input:
+    # Display user message
+    with st.chat_message("user"):
+        st.markdown(user_input)
+
+    st.session_state.history.append({"role": "user", "text": user_input})
+
+    # Get Gemini response
+    with st.spinner("Travelio is planning your trip..."):
+        response = model.generate_content(
+            st.session_state.history[-10:]  # Last 10 messages
+        )
+        reply = response.text
+
+    # Display Gemini response
+    with st.chat_message("assistant"):
+        st.markdown(reply)
+
+    # Store assistant reply in history
+    st.session_state.history.append({"role": "model", "text": reply})
