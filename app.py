@@ -1,25 +1,36 @@
 import streamlit as st
 import google.generativeai as genai
 
-# 🔑 Direct API Key (replace with your own Gemini API Key)
-API_KEY = "your-gemini-api-key-here"  # 👈 Replace this!
+# 🧠 Configure Gemini with API key (Set it directly here for Streamlit Cloud)
+genai.configure(api_key="PASTE_YOUR_API_KEY_HERE")  # Replace this with your real key
 
-# 🔧 Configure Gemini
-genai.configure(api_key=API_KEY)
+# 💬 System prompt: Set the assistant's behavior
+SYSTEM_PROMPT = """You are an ecommerce assistant. 
+Only answer questions related to online shopping, products, delivery, returns, and customer support. 
+Politely reject unrelated topics like programming, history, politics, etc."""
 
-# ✅ Load Gemini 1.5 Flash model
+# 🧠 Initialize model
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-# 💬 Session history
-if "history" not in st.session_state:
-    st.session_state.history = [
-        {"role": "user", "text": (
-            "You are a helpful AI assistant. ONLY answer questions related to ecommerce, "
-            "product recommendations, online shopping, customer service, returns, and orders. "
-            "If the user asks about anything else, respond with: "
-            "'I'm only able to assist with ecommerce-related questions.'"
-        )},
-        {"role": "model", "text": "Hi! I'm here to help you with your ecommerce queries."}
-    ]
+# 🗂️ Store conversation history
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = [{"role": "user", "parts": [SYSTEM_PROMPT]}]
 
-# 🌍
+# 📄 Page settings
+st.set_page_config(page_title="🛒 EcommerceBot", page_icon="🛍️")
+st.title("🛒 EcommerceBot")
+st.caption("Your smart assistant for online shopping help!")
+
+# 💬 Display chat history
+for message in st.session_state.chat_history[1:]:  # Skip system prompt in UI
+    with st.chat_message("user" if message["role"] == "user" else "assistant"):
+        st.markdown(message["parts"][0])
+
+# 🧾 Chat input
+user_prompt = st.chat_input("Ask about products, orders, or delivery...")
+
+# 🤖 Get response from Gemini
+if user_prompt:
+    # Add user message to history
+    st.session_state.chat_history.append({"role": "user", "parts": [user_prompt]})
+    with st.chat_message("user"):
