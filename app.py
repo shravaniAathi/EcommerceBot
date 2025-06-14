@@ -1,11 +1,10 @@
 import streamlit as st
 import google.generativeai as genai
 
-# 🔐 Gemini API Key (enter directly if not using st.secrets)
-API_KEY = "YOUR_GEMINI_API_KEY_HERE"
-genai.configure(api_key=API_KEY)
+# 🔐 API key directly (replace with your key from Google AI Studio)
+genai.configure(api_key="YOUR_GEMINI_API_KEY")
 
-# 🧠 Travel-specific system behavior prompt
+# 💬 Topic restriction (Travel only)
 system_prompt = """
 You are Travelio, an AI travel assistant. Your ONLY task is to help users with travel and tourism-related information.
 
@@ -24,39 +23,24 @@ If the user asks something unrelated to travel, ALWAYS reply:
 Be polite, professional, helpful, and concise.
 """
 
-# 🧠 Initialize Gemini model with system-level prompt
-model = genai.GenerativeModel("gemini-pro")
-chat = model.start_chat(history=[
-    {"role": "user", "parts": [system_prompt]}
-])
+# 🧠 Initialize Gemini Flash model
+model = genai.GenerativeModel("gemini-1.5-flash")
 
-# 📄 Page setup
-st.set_page_config(page_title="🌍 Travelio - Your Travel Assistant")
-st.title("🌍 Travelio - Your AI Travel Assistant")
-st.caption("Ask me about travel destinations, tips, visas, itineraries, and more!")
-
-# 💬 Initialize chat history
+# 🧠 Store chat history in session
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+    st.session_state.chat_history = [
+        {"role": "user", "parts": [system_prompt]}  # Set system prompt
+    ]
 
-# 💾 Display chat history
-for role, msg in st.session_state.chat_history:
-    with st.chat_message(role):
-        st.markdown(msg)
+# 📤 Function to send and get Gemini response
+def get_response(prompt):
+    chat = model.start_chat(history=st.session_state.chat_history)
+    response = chat.send_message(prompt)
+    return response.text
 
-# 📝 Chat input
-user_input = st.chat_input("Where are you planning to go?")
+# 🖼️ Streamlit UI
+st.set_page_config(page_title="🌍 Travelio - AI Travel Assistant")
+st.title("🌍 Travelio - Your AI Travel Assistant")
+st.caption("Ask me about destinations, visas, flights, hotels, safety tips, and more!")
 
-# 🔁 Chat interaction
-if user_input:
-    # Display user message
-    with st.chat_message("user"):
-        st.markdown(user_input)
-    st.session_state.chat_history.append(("user", user_input))
-
-    # Get Gemini response
-    with st.spinner("Travelio is preparing your travel guidance..."):
-        response_text = ""
-        response_stream = chat.send_message(user_input, stream=True)
-        for chunk in response_stream:
-            response_text += chunk.text
+# 💬 Display past chat (skip sy
